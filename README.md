@@ -6,7 +6,7 @@ A minimal but professional Access Control Management API demonstrating .NET 8 be
 
 > **Portfolio/Learning Project**  
 > This project was built as a personal portfolio piece to demonstrate proficiency with .NET 8 Web API, Entity Framework Core, JWT authentication, and Docker containerization. It is not built for or affiliated with any employer.  
-> **Built: 2026-01**
+> **Built: December 2025**
 
 ## Tech Stack
 
