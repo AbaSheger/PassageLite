@@ -18,8 +18,32 @@ public static class DbSeeder
             // Only run migrations for relational databases (not in-memory)
             if (context.Database.IsRelational())
             {
-                await context.Database.MigrateAsync();
-                logger.LogInformation("Database migrated successfully");
+                // Check if there are pending migrations
+                var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+                var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+                
+                if (pendingMigrations.Any())
+                {
+                    await context.Database.MigrateAsync();
+                    logger.LogInformation("Database migrated successfully");
+                }
+                else if (!appliedMigrations.Any())
+                {
+                    // No migrations exist - use EnsureCreated to create schema from model
+                    // First delete the migration history table if it exists but is empty
+                    try
+                    {
+                        await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS \"__EFMigrationsHistory\"");
+                    }
+                    catch { /* ignore */ }
+                    
+                    await context.Database.EnsureCreatedAsync();
+                    logger.LogInformation("Database schema created (no migrations)");
+                }
+                else
+                {
+                    logger.LogInformation("Database is up to date");
+                }
             }
             else
             {
