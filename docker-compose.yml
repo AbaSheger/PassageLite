@@ -1,0 +1,48 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: passagelite-api
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=passagelite;Username=postgres;Password=postgres
+      - Jwt__Secret=ThisIsAVerySecretKeyForJwtTokenGenerationThatShouldBeAtLeast32Characters!
+      - Jwt__Issuer=PassageLite
+      - Jwt__Audience=PassageLite
+      - Jwt__ExpirationMinutes=60
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - passagelite-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: passagelite-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=passagelite
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - passagelite-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  passagelite-network:
+    driver: bridge
+
+volumes:
+  postgres-data:

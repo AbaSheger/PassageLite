@@ -1,0 +1,36 @@
+# Build artifacts
+bin/
+obj/
+out/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+
+# Test results
+TestResults/
+*.trx
+
+# Misc
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Local settings
+appsettings.*.local.json
+*.local.json
+
+# Docker volumes
+postgres-data/
