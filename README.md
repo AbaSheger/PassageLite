@@ -288,6 +288,17 @@ Configuration is managed via `appsettings.json` and environment variables:
 | Jwt:Audience | Jwt__Audience | JWT audience |
 | Jwt:ExpirationMinutes | Jwt__ExpirationMinutes | Token expiration time |
 
+## Screenshots
+
+### Swagger UI — API Overview
+![Swagger Overview](docs/screenshots/01-swagger-overview.png)
+
+### Login & JWT Token
+![Login Response](docs/screenshots/03-login-response.png)
+
+### GET /areas — Protected Endpoint
+![Get Areas](docs/screenshots/02-get-areas.png)
+
 ## License
 
 MIT License - See [LICENSE](LICENSE) for details.

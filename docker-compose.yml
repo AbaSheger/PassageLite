@@ -12,7 +12,7 @@ services:
       - Jwt__Secret=ThisIsAVerySecretKeyForJwtTokenGenerationThatShouldBeAtLeast32Characters!
       - Jwt__Issuer=PassageLite
       - Jwt__Audience=PassageLite
-      - Jwt__ExpirationMinutes=60
+      - Jwt__ExpirationMinutes=480
     depends_on:
       postgres:
         condition: service_healthy
