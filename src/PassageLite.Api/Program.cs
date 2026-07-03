@@ -1,6 +1,9 @@
 ﻿using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PassageLite.Application.Interfaces;
@@ -130,7 +133,25 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var payload = new
+        {
+            status = report.Status.ToString(),
+            entries = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                exception = e.Value.Exception?.ToString()
+            })
+        };
+        await context.Response.WriteAsync(JsonSerializer.Serialize(payload));
+    }
+});
 
 app.Run();
 
