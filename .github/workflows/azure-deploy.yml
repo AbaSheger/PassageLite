@@ -2,7 +2,7 @@ name: Build, Test and Deploy to Azure App Service
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, azure-sqlserver ]
   workflow_dispatch:
 
 env:
