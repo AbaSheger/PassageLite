@@ -2,13 +2,17 @@
 
 A minimal but professional Access Control Management API demonstrating .NET 8 best practices with JWT authentication, multi-database support, CI/CD, and cloud deployment to Azure.
 
-**Live API:** https://passagelite-api.azurewebsites.net/health
+**Live API Root:** https://passagelite-api.azurewebsites.net/  
+**Health Check:** https://passagelite-api.azurewebsites.net/health  
+**Swagger/OpenAPI:** https://passagelite-api.azurewebsites.net/swagger
 
 ## Context
 
 > **Portfolio/Learning Project**  
 > This project was built as a personal portfolio piece to demonstrate proficiency with .NET 8 Web API, Entity Framework Core, JWT authentication, Docker containerization, and Azure cloud deployment. It is not built for or affiliated with any employer.  
 > **Built: December 2025 — Deployed to Azure: July 2026**
+
+PassageLite is an API project. The root URL serves a small HTML landing page for portfolio review, not a full frontend application.
 
 ## Tech Stack
 
@@ -23,6 +27,7 @@ A minimal but professional Access Control Management API demonstrating .NET 8 be
 - **Docker & Docker Compose** - Containerization
 - **GitHub Actions** - CI/CD pipeline (build, test, deploy)
 - **Azure App Service** - Cloud hosting (France Central, F1 free tier)
+- **Azure Service Bus** - Optional `AccessGranted` event publishing when admins grant access
 
 ## Project Structure
 
@@ -51,6 +56,14 @@ The GitHub Actions workflow (`.github/workflows/azure-deploy.yml`) runs on every
 | `deploy` | Deploys the published artifact to Azure App Service (requires both jobs to pass) |
 
 The live API is deployed at: **https://passagelite-api.azurewebsites.net**
+
+Portfolio review links:
+
+| URL | Description |
+|-----|-------------|
+| https://passagelite-api.azurewebsites.net/ | API landing page |
+| https://passagelite-api.azurewebsites.net/health | Health check |
+| https://passagelite-api.azurewebsites.net/swagger | Swagger/OpenAPI documentation |
 
 ## Quick Start with Docker
 
@@ -219,6 +232,8 @@ curl -X POST http://localhost:5000/access/grant \
   }'
 ```
 
+When configured, this endpoint publishes an `AccessGranted` event to Azure Service Bus after the access grant is saved. If `AzureServiceBus:ConnectionString` is empty, the app uses a no-op publisher and no Azure message is sent.
+
 ### Revoke Access (Admin only)
 
 ```bash
@@ -283,6 +298,7 @@ The test project includes:
    - Access check returns false when no grant exists
    - Access check returns false when grant not yet valid
    - Grant access creates new grant
+   - Grant access publishes an `AccessGranted` event
    - Revoke access revokes existing grant
 
 2. **Integration Tests** (`IntegrationTests.cs`)
@@ -310,6 +326,26 @@ Configuration is managed via `appsettings.json` and environment variables:
 | Jwt:Issuer | Jwt__Issuer | JWT issuer |
 | Jwt:Audience | Jwt__Audience | JWT audience |
 | Jwt:ExpirationMinutes | Jwt__ExpirationMinutes | Token expiration time |
+| AzureServiceBus:ConnectionString | AzureServiceBus__ConnectionString | Azure Service Bus connection string; leave empty to disable publishing |
+| AzureServiceBus:AccessGrantedQueueOrTopicName | AzureServiceBus__AccessGrantedQueueOrTopicName | Queue or topic name for `AccessGranted` events |
+
+### Azure Service Bus Events
+
+`POST /access/grant` emits an `AccessGranted` event only after the grant has been persisted. The message body is JSON and includes:
+
+```json
+{
+  "grantId": "00000000-0000-0000-0000-000000000000",
+  "userId": "22222222-2222-2222-2222-222222222222",
+  "areaId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "areaName": "Main Lobby",
+  "validFrom": "2026-01-01T00:00:00Z",
+  "validTo": "2026-12-31T23:59:59Z",
+  "occurredAt": "2026-07-03T00:00:00Z"
+}
+```
+
+The Azure Service Bus message uses subject `AccessGranted`, content type `application/json`, and the `eventType` application property set to `AccessGranted`.
 
 ## Screenshots
 

@@ -23,18 +23,29 @@ public class IntegrationTests : IClassFixture<WebApplicationFactory<Program>>
         _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Development");
-            builder.ConfigureServices(services =>
-            {
-                // Remove the existing DbContext registration
-                services.RemoveAll(typeof(DbContextOptions<AppDbContext>));
-                services.RemoveAll(typeof(AppDbContext));
+            builder.ConfigureServices(ConfigureTestDatabase);
+        });
+    }
 
-                // Add in-memory database for testing
-                services.AddDbContext<AppDbContext>(options =>
-                {
-                    options.UseInMemoryDatabase(_dbName);
-                });
-            });
+    private static void ConfigureTestDatabase(IServiceCollection services)
+    {
+        // Remove the existing DbContext registration
+        services.RemoveAll(typeof(DbContextOptions<AppDbContext>));
+        services.RemoveAll(typeof(AppDbContext));
+
+        // Add in-memory database for testing
+        services.AddDbContext<AppDbContext>(options =>
+        {
+            options.UseInMemoryDatabase(_dbName);
+        });
+    }
+
+    private WebApplicationFactory<Program> CreateProductionFactory()
+    {
+        return _factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Production");
+            builder.ConfigureServices(ConfigureTestDatabase);
         });
     }
 
@@ -71,6 +82,42 @@ public class IntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RootEndpoint_ReturnsPortfolioLandingPage()
+    {
+        // Arrange
+        var client = CreateProductionFactory().CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/");
+        var content = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("PassageLite API", content);
+        Assert.Contains(".NET 8 Web API for access control management", content);
+        Assert.Contains("Azure Service Bus event publishing support", content);
+        Assert.Contains("href=\"/health\"", content);
+        Assert.Contains("href=\"/swagger\"", content);
+    }
+
+    [Fact]
+    public async Task SwaggerEndpoint_ReturnsOpenApiDocumentation_InProduction()
+    {
+        // Arrange
+        var client = CreateProductionFactory().CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/swagger/v1/swagger.json");
+        var content = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("PassageLite API", content);
     }
 
     [Fact]

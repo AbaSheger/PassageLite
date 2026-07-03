@@ -1,4 +1,5 @@
 using PassageLite.Application.DTOs;
+using PassageLite.Application.Events;
 using PassageLite.Application.Interfaces;
 using PassageLite.Domain.Entities;
 using PassageLite.Domain.Interfaces;
@@ -8,10 +9,12 @@ namespace PassageLite.Application.Services;
 public class AccessService : IAccessService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAccessEventPublisher _accessEventPublisher;
 
-    public AccessService(IUnitOfWork unitOfWork)
+    public AccessService(IUnitOfWork unitOfWork, IAccessEventPublisher accessEventPublisher)
     {
         _unitOfWork = unitOfWork;
+        _accessEventPublisher = accessEventPublisher;
     }
 
     public async Task<AccessGrantDto> GrantAccessAsync(GrantAccessRequest request)
@@ -40,6 +43,7 @@ public class AccessService : IAccessService
             existingGrant.IsRevoked = false;
             await _unitOfWork.AccessGrants.UpdateAsync(existingGrant);
             await _unitOfWork.SaveChangesAsync();
+            await PublishAccessGrantedAsync(existingGrant, area.Name);
 
             return new AccessGrantDto(
                 existingGrant.Id,
@@ -67,6 +71,7 @@ public class AccessService : IAccessService
 
         await _unitOfWork.AccessGrants.AddAsync(grant);
         await _unitOfWork.SaveChangesAsync();
+        await PublishAccessGrantedAsync(grant, area.Name);
 
         return new AccessGrantDto(
             grant.Id,
@@ -146,5 +151,20 @@ public class AccessService : IAccessService
         }
 
         return new AccessCheckResult(true, $"Access granted to {area.Name}");
+    }
+
+    private Task PublishAccessGrantedAsync(AccessGrant grant, string areaName)
+    {
+        var accessGrantedEvent = new AccessGrantedEvent(
+            grant.Id,
+            grant.UserId,
+            grant.AreaId,
+            areaName,
+            grant.ValidFrom,
+            grant.ValidTo,
+            DateTime.UtcNow
+        );
+
+        return _accessEventPublisher.PublishAccessGrantedAsync(accessGrantedEvent);
     }
 }
