@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -60,9 +60,24 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configure DbContext
+// Configure DbContext (provider selectable via Database:Provider config, defaults to Postgres)
+var databaseProvider = builder.Configuration["Database:Provider"] ?? "Postgres";
+var useSqlServer = databaseProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase);
+var connectionString = useSqlServer
+    ? builder.Configuration.GetConnectionString("SqlServerConnection")
+    : builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (useSqlServer)
+    {
+        options.UseSqlServer(connectionString);
+    }
+    else
+    {
+        options.UseNpgsql(connectionString);
+    }
+});
 
 // Configure JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

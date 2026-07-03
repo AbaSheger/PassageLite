@@ -1,4 +1,4 @@
-services:
+﻿services:
   api:
     build:
       context: .
@@ -8,6 +8,7 @@ services:
       - "5000:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - Database__Provider=Postgres
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=passagelite;Username=postgres;Password=postgres
       - Jwt__Secret=ThisIsAVerySecretKeyForJwtTokenGenerationThatShouldBeAtLeast32Characters!
       - Jwt__Issuer=PassageLite
@@ -40,9 +41,55 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # Optional: run the API against SQL Server instead of Postgres.
+  # Start with: docker compose --profile sqlserver up --build api-sqlserver sqlserver
+  api-sqlserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: passagelite-api-sqlserver
+    profiles: ["sqlserver"]
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Database__Provider=SqlServer
+      - ConnectionStrings__SqlServerConnection=Server=sqlserver,1433;Database=passagelite;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True
+      - Jwt__Secret=ThisIsAVerySecretKeyForJwtTokenGenerationThatShouldBeAtLeast32Characters!
+      - Jwt__Issuer=PassageLite
+      - Jwt__Audience=PassageLite
+      - Jwt__ExpirationMinutes=480
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - passagelite-network
+    restart: unless-stopped
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: passagelite-sqlserver
+    profiles: ["sqlserver"]
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong!Passw0rd
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - passagelite-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"YourStrong!Passw0rd\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+
 networks:
   passagelite-network:
     driver: bridge
 
 volumes:
   postgres-data:
+  sqlserver-data:
