@@ -1,23 +1,28 @@
 # PassageLite
 
-A minimal but professional Access Control Management API demonstrating .NET 8 best practices with JWT authentication, PostgreSQL, and Docker support.
+A minimal but professional Access Control Management API demonstrating .NET 8 best practices with JWT authentication, multi-database support, CI/CD, and cloud deployment to Azure.
+
+**Live API:** https://passagelite-api.azurewebsites.net/health
 
 ## Context
 
 > **Portfolio/Learning Project**  
-> This project was built as a personal portfolio piece to demonstrate proficiency with .NET 8 Web API, Entity Framework Core, JWT authentication, and Docker containerization. It is not built for or affiliated with any employer.  
-> **Built: December 2025**
+> This project was built as a personal portfolio piece to demonstrate proficiency with .NET 8 Web API, Entity Framework Core, JWT authentication, Docker containerization, and Azure cloud deployment. It is not built for or affiliated with any employer.  
+> **Built: December 2025 — Deployed to Azure: July 2026**
 
 ## Tech Stack
 
 - **.NET 8** - Latest LTS version
 - **ASP.NET Core Web API** - RESTful API framework
-- **Entity Framework Core 8** - ORM with code-first migrations
-- **PostgreSQL 16** - Primary database
+- **Entity Framework Core 8** - ORM with code-first migrations, supports PostgreSQL and SQL Server
+- **PostgreSQL** (Supabase) - Production database
+- **SQL Server** - Alternate provider, verified via CI service container
 - **JWT Bearer Authentication** - Secure token-based auth with role support
 - **Serilog** - Structured logging with request logging
 - **xUnit** - Unit and integration testing
 - **Docker & Docker Compose** - Containerization
+- **GitHub Actions** - CI/CD pipeline (build, test, deploy)
+- **Azure App Service** - Cloud hosting (France Central, F1 free tier)
 
 ## Project Structure
 
@@ -34,6 +39,18 @@ PassageLite/
 ├── docker-compose.yml
 └── README.md
 ```
+
+## CI/CD & Deployment
+
+The GitHub Actions workflow (`.github/workflows/azure-deploy.yml`) runs on every push to `main` or `azure-sqlserver` and has three jobs:
+
+| Job | What it does |
+|-----|-------------|
+| `build-and-test` | Restores, builds, runs all unit/integration tests, publishes artifact |
+| `test-sqlserver` | Spins up a real SQL Server 2022 container and runs `SqlServerProviderTests` against it |
+| `deploy` | Deploys the published artifact to Azure App Service (requires both jobs to pass) |
+
+The live API is deployed at: **https://passagelite-api.azurewebsites.net**
 
 ## Quick Start with Docker
 
@@ -275,6 +292,12 @@ The test project includes:
    - Protected endpoints require authentication
    - Admin-only endpoints reject non-admin (403 Forbidden)
    - User info endpoint returns correct data
+
+3. **SQL Server Provider Tests** (`SqlServerProviderTests.cs`)
+   - Schema creation and user write/read against real SQL Server
+   - Unique email constraint enforcement
+   - Area and AccessGrant with eager-loaded relationships
+   - Skipped automatically when `PASSAGELITE_SQLSERVER_TEST_CONNECTION` is not set (CI provides it via service container)
 
 ## Configuration
 

@@ -1,0 +1,90 @@
+name: Build, Test and Deploy to Azure App Service
+
+on:
+  push:
+    branches: [ main, azure-sqlserver ]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: passagelite-api        # must match the App Service name you create
+  DOTNET_VERSION: '8.0.x'
+  PUBLISH_DIR: ${{ github.workspace }}/publish
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      - name: Publish
+        run: dotnet publish src/PassageLite.Api/PassageLite.Api.csproj --no-build --configuration Release --output ${{ env.PUBLISH_DIR }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: passagelite-api
+          path: ${{ env.PUBLISH_DIR }}
+
+  test-sqlserver:
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: PassageLite_CI_2026!
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P PassageLite_CI_2026! -C -Q 'SELECT 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run tests against real SQL Server
+        env:
+          PASSAGELITE_SQLSERVER_TEST_CONNECTION: "Server=localhost,1433;Database=passagelite_ci;User Id=sa;Password=PassageLite_CI_2026!;TrustServerCertificate=True"
+        run: dotnet test --filter "FullyQualifiedName~SqlServerProviderTests" --verbosity normal
+
+  deploy:
+    needs: [build-and-test, test-sqlserver]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: passagelite-api
+          path: ${{ env.PUBLISH_DIR }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.PUBLISH_DIR }}

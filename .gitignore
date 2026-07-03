@@ -34,3 +34,5 @@ appsettings.*.local.json
 
 # Docker volumes
 postgres-data/
+
+.playwright-mcp/
