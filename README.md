@@ -349,15 +349,14 @@ The Azure Service Bus message uses subject `AccessGranted`, content type `applic
 
 ## Screenshots
 
-### Swagger UI — API Overview
-![Swagger Overview](docs/screenshots/01-swagger-overview.png)
+### API Landing Page
+![API Landing Page](docs/screenshots/01-api-landing-page.png)
 
-### Login & JWT Token
-![Login Response](docs/screenshots/03-login-response.png)
+### Swagger UI - API Overview
+![Swagger Overview](docs/screenshots/02-swagger-overview.png)
 
-### GET /areas — Protected Endpoint
-![Get Areas](docs/screenshots/02-get-areas.png)
+### Access Grant Documentation
+![Access Grant Documentation](docs/screenshots/03-access-grant-docs.png)
 
 ## License
-
 MIT License - See [LICENSE](LICENSE) for details.
