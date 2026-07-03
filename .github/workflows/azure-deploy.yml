@@ -70,8 +70,26 @@ jobs:
           PASSAGELITE_SQLSERVER_TEST_CONNECTION: "Server=localhost,1433;Database=passagelite_ci;User Id=sa;Password=PassageLite_CI_2026!;TrustServerCertificate=True"
         run: dotnet test --filter "FullyQualifiedName~SqlServerProviderTests" --verbosity normal
 
+  test-servicebus:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run tests against real Service Bus
+        env:
+          PASSAGELITE_SERVICEBUS_TEST_CONNECTION: ${{ secrets.PASSAGELITE_SERVICEBUS_TEST_CONNECTION }}
+        run: dotnet test --filter "FullyQualifiedName~ServiceBusPublisherTests" --verbosity normal
+
   deploy:
-    needs: [build-and-test, test-sqlserver]
+    needs: [build-and-test, test-sqlserver, test-servicebus]
     runs-on: ubuntu-latest
     environment:
       name: production
