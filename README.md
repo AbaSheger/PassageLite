@@ -53,7 +53,8 @@ The GitHub Actions workflow (`.github/workflows/azure-deploy.yml`) runs on every
 |-----|-------------|
 | `build-and-test` | Restores, builds, runs all unit/integration tests, publishes artifact |
 | `test-sqlserver` | Spins up a real SQL Server 2022 container and runs `SqlServerProviderTests` against it |
-| `deploy` | Deploys the published artifact to Azure App Service (requires both jobs to pass) |
+| `test-servicebus` | Runs `ServiceBusPublisherTests` against the real Azure Service Bus namespace (skips if secret not set) |
+| `deploy` | Deploys the published artifact to Azure App Service (requires all three jobs to pass) |
 
 The live API is deployed at: **https://passagelite-api.azurewebsites.net**
 
@@ -314,6 +315,11 @@ The test project includes:
    - Unique email constraint enforcement
    - Area and AccessGrant with eager-loaded relationships
    - Skipped automatically when `PASSAGELITE_SQLSERVER_TEST_CONNECTION` is not set (CI provides it via service container)
+
+4. **Service Bus Publisher Tests** (`ServiceBusPublisherTests.cs`)
+   - Publishes an `AccessGranted` event to the real Azure Service Bus queue
+   - Receives the message back and asserts correct `MessageId`, `Subject`, `ContentType`, application properties, and JSON body
+   - Skipped automatically when `PASSAGELITE_SERVICEBUS_TEST_CONNECTION` is not set (CI provides it via GitHub Actions secret)
 
 ## Configuration
 
