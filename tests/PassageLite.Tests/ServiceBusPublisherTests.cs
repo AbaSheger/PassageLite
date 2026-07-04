@@ -7,13 +7,6 @@ using Xunit;
 
 namespace PassageLite.Tests;
 
-/// <summary>
-/// Verifies AzureServiceBusAccessEventPublisher sends a well-formed message to the real queue.
-///
-/// Runs only when PASSAGELITE_SERVICEBUS_TEST_CONNECTION is set. In CI this is provided by a
-/// GitHub Actions secret (see .github/workflows/azure-deploy.yml, test-servicebus job).
-/// Locally, set the env var to the namespace connection string to run it.
-/// </summary>
 public class ServiceBusPublisherTests : IAsyncLifetime
 {
     private static readonly string? ConnectionString =
@@ -26,7 +19,7 @@ public class ServiceBusPublisherTests : IAsyncLifetime
 
     public Task InitializeAsync()
     {
-        if (ConnectionString is null) return Task.CompletedTask;
+        if (string.IsNullOrWhiteSpace(ConnectionString)) return Task.CompletedTask;
 
         _client = new ServiceBusClient(ConnectionString);
         _receiver = _client.CreateReceiver(QueueName, new ServiceBusReceiverOptions
@@ -46,7 +39,7 @@ public class ServiceBusPublisherTests : IAsyncLifetime
     [SkippableFact]
     public async Task PublishAccessGrantedAsync_SendsMessageToQueue()
     {
-        Skip.If(ConnectionString is null, "PASSAGELITE_SERVICEBUS_TEST_CONNECTION not set; skipping Service Bus test.");
+        Skip.If(string.IsNullOrWhiteSpace(ConnectionString), "PASSAGELITE_SERVICEBUS_TEST_CONNECTION not set; skipping Service Bus test.");
 
         var options = Options.Create(new AzureServiceBusOptions
         {
